@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Статистика тренажёра ОМ</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: пульт автора — ключ доступа, сводка, график активности, таблица людей, слабые темы, лента */
+:root{
+  --bg:#edf1f7;--surface:#fff;--surface2:#f5f7fb;--ink:#14213a;--muted:#5b6882;--line:#d4dbe7;
+  --sign:#1f56c4;--sign-ink:#fff;--sign-soft:#e2eafa;--ok:#1b8a4a;--ok-soft:#dff3e7;--bad:#cf3a2e;--bad-soft:#fbe4e1;--warn:#b97f00;--warn-soft:#fbf0d4;--grid:#e3e8f1;
+  --f-display:"Unbounded","Golos Text",system-ui,sans-serif;--f-body:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1420;--surface:#162032;--surface2:#1b2740;--ink:#e6ecf6;--muted:#97a4bc;--line:#2a3852;--sign:#5089f2;--sign-ink:#0b1220;--sign-soft:#1c2c4d;--ok:#3cc274;--ok-soft:#173726;--bad:#ff6a5e;--bad-soft:#3f1d1c;--warn:#f0bb3c;--warn-soft:#3a2e12;--grid:#223049;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d1420;--surface:#162032;--surface2:#1b2740;--ink:#e6ecf6;--muted:#97a4bc;--line:#2a3852;--sign:#5089f2;--sign-ink:#0b1220;--sign-soft:#1c2c4d;--ok:#3cc274;--ok-soft:#173726;--bad:#ff6a5e;--bad-soft:#3f1d1c;--warn:#f0bb3c;--warn-soft:#3a2e12;--grid:#223049;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{margin:0;font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--sign);outline-offset:2px}
+a{color:var(--sign)}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 60px}
+h1,h2,h3{margin:0;text-wrap:balance}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.sign{width:36px;height:36px;border-radius:8px;background:var(--sign);color:var(--sign-ink);display:grid;place-items:center;font-family:var(--f-display);font-size:13px;font-weight:700}
+.top h1{font-family:var(--f-display);font-size:20px;flex:1}
+.muted{color:var(--muted)}.small{font-size:13px}.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:14px;min-width:0}
+.box h2{font-family:var(--f-display);font-size:15px;margin-bottom:10px}
+.setup{display:grid;grid-template-columns:2fr 1fr auto auto;gap:10px;align-items:end}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.field input{border:2px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;width:100%}
+.field input:focus{border-color:var(--sign);outline:none}
+.btn{border:0;border-radius:10px;padding:11px 16px;font-weight:600;background:var(--sign);color:var(--sign-ink)}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.msg{margin-top:8px;font-size:14px;min-height:1.2em}.msg.err{color:var(--bad)}.msg.ok{color:var(--ok)}
+.demo{background:var(--warn-soft);border:1px dashed var(--warn);border-radius:10px;padding:8px 12px;font-size:14px;margin-bottom:14px}
+.tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.tile .v{font-family:var(--f-display);font-size:26px;font-weight:700;line-height:1.1}
+.tile .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.two{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;white-space:nowrap}
+th.s{cursor:pointer}th.s:hover{color:var(--sign)}
+td.d{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.people{min-width:760px}
+.people td:first-child{white-space:nowrap}
+.pill{white-space:nowrap;display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.bad{background:var(--bad-soft);color:var(--bad)}.pill.mu{background:var(--surface2);color:var(--muted)}
+.bar{height:8px;border-radius:4px;background:var(--grid);overflow:hidden;min-width:80px}
+.bar i{display:block;height:100%;background:var(--sign);border-radius:4px}
+.chart{position:relative}
+.chart svg{width:100%;height:auto;display:block}
+.gl{stroke:var(--grid)}.ax{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+.bars rect{fill:var(--sign)}.bars rect.hv{fill:var(--warn)}
+.tip{position:absolute;top:0;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:13px;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.12);white-space:nowrap}
+.feed{display:flex;flex-direction:column;max-height:420px;overflow-y:auto}
+.fi{display:grid;grid-template-columns:92px 1fr;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.fi .t{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.search{border:2px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;width:260px;max-width:100%}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.head h2{margin:0}
+details summary{cursor:pointer;font-weight:600}
+details ol{padding-left:20px}details li{margin:4px 0;max-width:80ch}
+code{font-family:var(--f-mono);font-size:13px;background:var(--surface2);padding:1px 5px;border-radius:5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px;background:var(--surface2)}
+.chip b{font-family:var(--f-mono)}
+@media (max-width:820px){.setup{grid-template-columns:1fr}.tiles{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="sign">ОМ</div><h1>Статистика тренажёра</h1><span class="muted small" id="upd"></span></div>
+
+  <section class="box">
+    <h2>Доступ</h2>
+    <div class="setup">
+      <div class="field"><label for="url">Ссылка веб-приложения Apps Script</label><input id="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" spellcheck="false"></div>
+      <div class="field"><label for="key">Ключ</label><input id="key" type="password" placeholder="ваш ключ из Code.gs" autocomplete="off"></div>
+      <button class="btn" id="load">Загрузить</button>
+      <button class="btn ghost" id="demo">Пример данных</button>
+    </div>
+    <div class="msg" id="msg"></div>
+    <details style="margin-top:6px"><summary>Как подключить (5 минут)</summary>
+      <ol>
+        <li>Создайте Google Таблицу. Меню <b>Расширения → Apps Script</b>.</li>
+        <li>Удалите всё в редакторе, вставьте код из файла <code>Code.gs</code>. В строке <code>const KEY</code> впишите свой ключ (любое слово, его знаете только вы). Сохраните.</li>
+        <li><b>Развернуть → Новое развертывание</b> → тип <b>Веб-приложение</b>. «Запуск от имени»: <b>я</b>; «Кто имеет доступ»: <b>все</b>. Нажмите «Развернуть» и разрешите доступ к таблице.</li>
+        <li>Скопируйте URL (заканчивается на <code>/exec</code>). Вставьте его в файл <code>config.js</code> в репозитории: <code>window.OM_TRACK = "URL";</code> — и сохраните коммит.</li>
+        <li>Здесь вставьте тот же URL и ключ и нажмите «Загрузить». Ссылка и ключ запоминаются только в этом браузере.</li>
+      </ol>
+      <p class="small muted">Если поменяете код скрипта, сделайте «Развернуть → Управление развертываниями → Изменить → Новая версия», иначе сайт будет работать со старой версией.</p>
+    </details>
+  </section>
+
+  <div id="dash" hidden>
+    <div class="demo" id="demoNote" hidden>Это пример со сгенерированными данными, чтобы было видно, как выглядит страница. Нажмите «Загрузить», чтобы увидеть настоящих пользователей.</div>
+    <div class="tiles" id="tiles"></div>
+    <div class="two">
+      <section class="box"><div class="head"><h2>Активные люди по дням</h2><span class="muted small">последние 14 дней, МСК</span></div><div class="chart" id="chart"></div></section>
+      <section class="box"><div class="head"><h2>Что открывают</h2></div><div class="chips" id="opens"></div>
+        <h2 style="margin-top:16px">Вопрос-сюрприз</h2><div id="joke" class="small"></div></section>
+    </div>
+    <section class="box">
+      <div class="head"><h2>Участники</h2><input class="search" id="q" placeholder="Поиск по имени" aria-label="Поиск по имени"></div>
+      <div class="tw"><table class="people"><thead><tr>
+        <th class="s" data-s="name">Имя</th><th class="s" data-s="first">Первый вход</th><th class="s" data-s="last">Последняя активность</th><th class="s" data-s="visits">Заходов</th><th class="s" data-s="days">Дней</th><th class="s" data-s="exams">Контрольных</th><th class="s" data-s="best">Лучший</th><th class="s" data-s="lastScore">Последний</th><th class="s" data-s="acc">Точность в задачах</th><th>Сюрприз</th>
+      </tr></thead><tbody id="ppl"></tbody></table></div>
+    </section>
+    <div class="two">
+      <section class="box"><div class="head"><h2>Темы: где ошибаются</h2><span class="muted small">доля верных пунктов</span></div><div class="tw"><table><thead><tr><th>Тип</th><th>Задач</th><th>Верно</th><th></th></tr></thead><tbody id="types"></tbody></table></div></section>
+      <section class="box"><div class="head"><h2>Лента событий</h2></div><div class="feed" id="feed"></div></section>
+    </div>
+  </div>
+</div>
+<script>
+(function(){'use strict';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ld=(k,d)=>{try{const v=localStorage.getItem('omst_'+k);return v==null?d:v}catch(e){return d}};
+const sv=(k,v)=>{try{localStorage.setItem('omst_'+k,v)}catch(e){}};
+const TYPES=['Операционные приоритеты','Показатели процессов','Несколько единиц потока','Закон Литтла','EOQ и точка заказа','Дискретный спрос','Нормальное распределение','Рычаги','Интегральный показатель (ССП)','Комбинированная'];
+const OPEN={exam:'Контрольная',theory:'Теория',gen:'Генератор',traps:'Ловушки',concepts:'Понятия',mist:'Мои ошибки',marathon:'Марафон',coins:'Опкойны',type:'Тренировка по типу'};
+const MSK=3*3600e3;
+const dkey=t=>new Date(t+MSK).toISOString().slice(0,10);
+const fmtDT=t=>{const d=new Date(t+MSK);return d.toISOString().slice(8,10)+'.'+d.toISOString().slice(5,7)+' '+d.toISOString().slice(11,16)};
+const fmt=(x,d=1)=>x==null||!isFinite(x)?'—':(+x.toFixed(d)).toLocaleString('ru-RU');
+$('#url').value=ld('url','');$('#key').value=ld('key','');
+let ROWS=[],sortK='last',sortDir=-1,isDemo=false;
+
+$('#load').onclick=async()=>{
+  const url=$('#url').value.trim(),key=$('#key').value.trim(),m=$('#msg');
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(url)){m.className='msg err';m.textContent='Ссылка должна выглядеть как https://script.google.com/macros/s/…/exec';return}
+  if(!key){m.className='msg err';m.textContent='Введите ключ из Code.gs.';return}
+  sv('url',url);sv('key',key);m.className='msg';m.textContent='Загружаю…';
+  try{const r=await fetch(url+'?key='+encodeURIComponent(key)+'&t='+Date.now());const j=await r.json();
+    if(j.error){m.className='msg err';m.textContent=j.error==='bad key'?'Неверный ключ: проверьте строку const KEY в Code.gs.':j.error;return}
+    isDemo=false;ROWS=parse(j.rows||[]);m.className='msg ok';m.textContent='Загружено событий: '+ROWS.length;render()}
+  catch(e){m.className='msg err';m.textContent='Не удалось загрузить. Проверьте, что веб-приложение развернуто с доступом «Все» и ссылка правильная.'}
+};
+$('#demo').onclick=()=>{isDemo=true;ROWS=demo();$('#msg').className='msg';$('#msg').textContent='';render()};
+$('#q').oninput=()=>renderPeople();
+document.querySelectorAll('th.s').forEach(th=>th.onclick=()=>{const k=th.dataset.s;if(sortK===k)sortDir=-sortDir;else{sortK=k;sortDir=k==='name'?1:-1}renderPeople()});
+
+function parse(rows){return rows.map(r=>{let d={};try{d=JSON.parse(r[4]||'{}')}catch(e){}return {t:Date.parse(r[0]),uid:String(r[1]||''),name:String(r[2]||'').trim(),ev:String(r[3]||''),d,ua:String(r[5]||'')}}).filter(r=>isFinite(r.t)).sort((a,b)=>a.t-b.t)}
+
+let P=[];
+function aggregate(){
+  const m=new Map();
+  ROWS.forEach(r=>{let p=m.get(r.uid);if(!p){p={uid:r.uid,name:'',first:r.t,last:r.t,visits:0,days:new Set(),exams:0,best:null,lastScore:null,ok:0,n:0,joke:null,mob:false};m.set(r.uid,p)}
+    if(r.name)p.name=r.name;p.last=r.t;p.days.add(dkey(r.t));if(/Mobi|Android|iPhone/i.test(r.ua))p.mob=true;
+    if(r.ev==='visit')p.visits++;
+    if(r.ev==='joke'&&p.joke==null)p.joke=!!r.d.ok;
+    if(r.ev==='exam'&&r.d.score!=null){p.exams++;p.best=p.best==null?r.d.score:Math.max(p.best,r.d.score);p.lastScore=r.d.score}
+    if((r.ev==='exam'||r.ev==='finish')&&Array.isArray(r.d.tasks))r.d.tasks.forEach(x=>{p.ok+=+x.ok||0;p.n+=+x.n||0})});
+  P=[...m.values()].map(p=>Object.assign(p,{days:p.days.size,acc:p.n?p.ok/p.n:null,name:p.name||'Без имени ('+p.uid.slice(0,5)+')'}));
+}
+function render(){
+  aggregate();$('#dash').hidden=false;$('#demoNote').hidden=!isDemo;
+  const now=Date.now(),today=dkey(now);
+  const exams=ROWS.filter(r=>r.ev==='exam'&&r.d.score!=null);
+  const activeToday=new Set(ROWS.filter(r=>dkey(r.t)===today).map(r=>r.uid)).size;
+  const avg=exams.length?exams.reduce((a,r)=>a+r.d.score,0)/exams.length:null;
+  $('#tiles').innerHTML=[[P.length,'человек'],[ROWS.filter(r=>r.ev==='visit').length,'заходов'],[activeToday,'активны сегодня'],[exams.length,'контрольных сдано'],[avg==null?'—':fmt(avg)+'<span class="muted" style="font-size:15px"> /60</span>','средний балл']]
+    .map(([v,l])=>`<div class="tile"><div class="v mono">${v}</div><div class="l">${l}</div></div>`).join('');
+  $('#upd').textContent=isDemo?'пример':'обновлено '+fmtDT(now);
+  drawChart();renderPeople();
+  const oc={};ROWS.filter(r=>r.ev==='open').forEach(r=>{const k=r.d.g;oc[k]=(oc[k]||0)+1});
+  $('#opens').innerHTML=Object.entries(oc).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span class="chip">${esc(OPEN[k]||k)} <b>${v}</b></span>`).join('')||'<span class="muted small">Пока нет данных</span>';
+  const jk=P.filter(p=>p.joke!=null),jy=jk.filter(p=>p.joke).length;
+  $('#joke').innerHTML=jk.length?`Узнали преподавателя: <b>${jy}</b> из ${jk.length} (${Math.round(jy/jk.length*100)} %). Не узнали: ${jk.filter(p=>!p.joke).map(p=>esc(p.name)).join(', ')||'все узнали'}.`:'<span class="muted">Пока никто не отвечал</span>';
+  const ts=TYPES.map(()=>({c:0,ok:0,n:0}));ROWS.forEach(r=>{if((r.ev==='exam'||r.ev==='finish')&&Array.isArray(r.d.tasks))r.d.tasks.forEach(x=>{const o=ts[(x.t|0)-1];if(o){o.c++;o.ok+=+x.ok||0;o.n+=+x.n||0}})});
+  $('#types').innerHTML=ts.map((o,i)=>({...o,i})).sort((a,b)=>(a.n?a.ok/a.n:2)-(b.n?b.ok/b.n:2)).map(o=>`<tr><td>${o.i+1}. ${TYPES[o.i]}</td><td class="d">${o.c}</td><td class="d">${o.n?Math.round(o.ok/o.n*100)+' %':'—'}</td><td><div class="bar"><i style="width:${o.n?o.ok/o.n*100:0}%"></i></div></td></tr>`).join('');
+  const nameOf=uid=>{const p=P.find(x=>x.uid===uid);return p?p.name:uid};
+  $('#feed').innerHTML=ROWS.slice(-80).reverse().map(r=>`<div class="fi"><span class="t">${fmtDT(r.t)}</span><span><b>${esc(nameOf(r.uid))}</b> — ${esc(desc(r))}</span></div>`).join('')||'<span class="muted small">Событий пока нет</span>';
+}
+function desc(r){const d=r.d;
+  if(r.ev==='visit')return 'зашёл на сайт';if(r.ev==='login')return 'вошёл, контрольная в '+(d.time||'?');
+  if(r.ev==='open')return 'открыл «'+(OPEN[d.g]||d.g)+'»'+(d.t?' · тип '+d.t:'');
+  if(r.ev==='joke')return d.ok?'узнал преподавателя':'не узнал преподавателя';
+  if(r.ev==='exam')return 'сдал контрольную: '+fmt(d.score)+' из 60 за '+(d.min||0)+' мин';
+  if(r.ev==='finish')return 'завершил «'+(d.title||d.mode)+'»: '+Math.round((d.share||0)*100)+' %';return r.ev}
+function renderPeople(){
+  const q=$('#q').value.trim().toLowerCase();
+  const arr=P.filter(p=>!q||p.name.toLowerCase().includes(q)).sort((a,b)=>{const x=a[sortK],y=b[sortK];if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (typeof x==='string'?x.localeCompare(y,'ru'):x-y)*sortDir});
+  $('#ppl').innerHTML=arr.map(p=>`<tr><td><b>${esc(p.name)}</b>${p.mob?' <span class="muted small">· телефон</span>':''}</td><td class="d">${fmtDT(p.first)}</td><td class="d">${fmtDT(p.last)}</td><td class="d">${p.visits}</td><td class="d">${p.days}</td><td class="d">${p.exams}</td><td class="d">${p.best==null?'—':fmt(p.best)}</td><td class="d">${p.lastScore==null?'—':fmt(p.lastScore)}</td><td>${p.acc==null?'<span class="muted">—</span>':`<div style="display:flex;gap:8px;align-items:center"><div class="bar" style="flex:1"><i style="width:${p.acc*100}%"></i></div><span class="mono small">${Math.round(p.acc*100)} %</span></div>`}</td><td>${p.joke==null?'<span class="pill mu">—</span>':p.joke?'<span class="pill ok">узнал</span>':'<span class="pill bad">не узнал</span>'}</td></tr>`).join('')||'<tr><td colspan="10" class="muted">Никого не найдено</td></tr>';
+}
+function drawChart(){
+  const days=[];const end=Date.now();for(let i=13;i>=0;i--){const k=dkey(end-i*864e5);days.push({k,u:new Set()})}
+  ROWS.forEach(r=>{const d=days.find(x=>x.k===dkey(r.t));if(d)d.u.add(r.uid)});
+  const v=days.map(d=>d.u.size),mx=Math.max(4,Math.ceil(Math.max(...v)/4)*4);
+  const W=640,H=230,L=34,R=10,T=12,B=30,bw=(W-L-R)/14,Y=y=>T+(H-T-B)*(1-y/mx);
+  let g='';for(let y=0;y<=mx;y+=mx/4)g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(y)}" y2="${Y(y)}"/><text class="ax" x="${L-6}" y="${Y(y)+4}" text-anchor="end">${y}</text>`;
+  days.forEach((d,i)=>{if(i%2===1||i===13)g+=`<text class="ax" x="${L+bw*i+bw/2}" y="${H-10}" text-anchor="middle">${d.k.slice(8,10)}.${d.k.slice(5,7)}</text>`});
+  const bars=days.map((d,i)=>{const h=Y(0)-Y(v[i]);return `<rect data-i="${i}" x="${L+bw*i+3}" y="${Y(v[i])-(v[i]?0:0)}" width="${bw-6}" height="${Math.max(0,h)}" rx="4"/>`}).join('');
+  $('#chart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Число активных людей по дням за 14 дней">${g}<g class="bars">${bars}</g><rect id="hit" x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="transparent"/></svg><div class="tip" id="tip" hidden></div>`;
+  const svg=$('#chart svg'),tip=$('#tip');
+  const mv=e=>{const r=svg.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W,i=Math.max(0,Math.min(13,Math.floor((x-L)/bw)));
+    svg.querySelectorAll('.bars rect').forEach(b=>b.classList.toggle('hv',+b.dataset.i===i));const d=days[i];
+    tip.hidden=false;tip.innerHTML=`<b>${d.k.slice(8,10)}.${d.k.slice(5,7)}</b>: ${v[i]} чел.`;tip.style.left=Math.min(r.width-120,Math.max(0,(L+bw*i)/W*r.width))+'px'};
+  svg.addEventListener('pointermove',mv);svg.addEventListener('pointerleave',()=>{tip.hidden=true;svg.querySelectorAll('.bars rect').forEach(b=>b.classList.remove('hv'))});
+}
+function demo(){
+  const names=['Пример: Студент А','Пример: Студент Б','Пример: Студент В','Пример: Студент Г','Пример: Студент Д','Пример: Студент Е'];const rows=[];const now=Date.now();let s=7;const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647};
+  names.forEach((n,k)=>{const uid='demo'+k;let t=now-(5+Math.floor(rnd()*8))*864e5;const lvl=0.45+rnd()*0.5;
+    rows.push({t,uid,name:n,ev:'visit',d:{},ua:k%2?'iPhone':'Mac'});rows.push({t:t+6e4,uid,name:n,ev:'login',d:{time:'14:00'},ua:''});rows.push({t:t+9e4,uid,name:n,ev:'joke',d:{ok:rnd()>0.3},ua:''});
+    while(t<now-36e5){t+=(0.3+rnd()*1.6)*864e5;if(t>now)break;rows.push({t,uid,name:n,ev:'visit',d:{},ua:''});
+      const g=['theory','type','exam','traps','coins','gen'][Math.floor(rnd()*6)];rows.push({t:t+3e4,uid,name:n,ev:'open',d:{g,t:g==='type'||g==='gen'?1+Math.floor(rnd()*10):undefined},ua:''});
+      if(g==='exam'){const tasks=[0,1,2,3].map(()=>{const n2=10+Math.floor(rnd()*12);const ty=1+Math.floor(rnd()*10);const ok=Math.round(n2*Math.min(1,lvl*(ty===7||ty===3?0.8:1)+rnd()*0.2));return {t:ty,ok,n:n2,p:Math.round(15*ok/n2*10)/10}});
+        rows.push({t:t+40*6e4,uid,name:n,ev:'exam',d:{score:Math.round(tasks.reduce((a,x)=>a+x.p,0)*10)/10,min:40,tasks},ua:''})}
+      if(g==='type'){const ty=1+Math.floor(rnd()*10);const tasks=[0,1,2].map(()=>{const n2=12;return {t:ty,ok:Math.round(n2*Math.min(1,lvl+rnd()*0.2)),n:n2}});rows.push({t:t+20*6e4,uid,name:n,ev:'finish',d:{mode:'type',title:'Тип '+ty,share:tasks.reduce((a,x)=>a+x.ok/x.n,0)/3,tasks},ua:''})}}});
+  return rows.sort((a,b)=>a.t-b.t)}
+if(ld('url','')&&ld('key',''))$('#load').click();else $('#demo').click();
+})();
+</script>
+</body>
+</html>
